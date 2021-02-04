@@ -1156,117 +1156,9 @@ case 'timer':
 					break
 
 
-case 'fig':
-            if (isMedia && type === 'image') {
-                const mediaData = await decryptMedia(message, uaOverride)
-				sharp(mediaData)
-				.resize(512, 512, {
-					fit: sharp.fit.contain
-				})
-				.toBuffer()
-				.then(async (resizedImageBuffer) => {
-					let resizedImageData = resizedImageBuffer.toString('base64');
-					let resizedBase64 = `data:${mimetype};base64,${resizedImageData}`;
-					await kill.sendImageAsSticker(from, resizedBase64)
-				})
-            } else if (quotedMsg && quotedMsg.type == 'image') {
-                const mediaData = await decryptMedia(quotedMsg, uaOverride)
-				sharp(mediaData)
-				.resize(512, 512, {
-					fit: sharp.fit.contain
-				})
-				.toBuffer()
-				.then(async (resizedImageBuffer) => {
-					let resizedImageData = resizedImageBuffer.toString('base64');
-					let resizedBase64 = `data:${quotedMsg.mimetype};base64,${resizedImageData}`;
-					await kill.sendImageAsSticker(from, resizedBase64)
-				})
-            } else if (args.length == 1) {
-                const url = args[1]
-                if (url.match(isUrl)) {
-                    await kill.sendStickerfromUrl(from, url, { method: 'get' })
-                        .catch(err => console.log('Erro: ', err))
-                } else {
-                    kill.reply(from, mess.error.Iv, id)
-                }
-            } else {
-                    kill.reply(from, mess.error.St, id)
-            }
-            break
-			
 
-		case 'ttp':
-			if (args.length == 0) return kill.reply(from, 'Cadê a frase né?', id)
-			axios.get(`https://st4rz.herokuapp.com/api/ttp?kata=${body.slice(5)}`)
-			.then(res => {
-				kill.sendImageAsSticker(from, res.data.result)
-			})
-			break
-			
-			
-		case 'about':
-			await kill.sendFile(from, './lib/media/img/iris.png', 'iris.png', sobre, id)
-			break
-
-			
-        case 'stickernobg':
-			if (isMedia) {
-                try {
-                    var mediaData = await decryptMedia(message, uaOverride)
-                    var imageBase64 = `data:${mimetype};base64,${mediaData.toString('base64')}`
-                    var base64img = imageBase64
-                    var outFile = './lib/media/img/noBg.png'
-                    var result = await removeBackgroundFromImageBase64({ base64img, apiKey: 'API DO SITE REMOVE.BG', size: 'auto', type: 'auto', outFile }) // bota sua propria api ai, cuidado no limite mensal
-                    await fs.writeFile(outFile, result.base64img)
-                    await kill.sendImageAsSticker(from, `data:${mimetype};base64,${result.base64img}`)
-					await kill.reply(from, 'Certifique-se de evitar usar isso quando não precisar,', id)
-                } catch(err) {
-                    console.log(err)
-					await kill.reply(from, 'Ups! Alguma coisa deu errado nesse comando!', id)
-                }
-            }
-            break
-
-
-
-        case 'gif':
-            if (isMedia) {
-                if (mimetype === 'video/mp4' && message.duration < 15 || mimetype === 'image/gif' && message.duration < 15) {
-                    var mediaData = await decryptMedia(message, uaOverride)
-                    kill.reply(from, mess.wait, id)
-                    var filename = `./lib/media/stickergif.${mimetype.split('/')[1]}`
-                    await fs.writeFileSync(filename, mediaData)
-                    await exec(`gify ${filename} ./lib/media/stickergf.gif --fps=15 --scale=256:256`, async function (error, stdout, stderr) {
-                        var gif = await fs.readFileSync('./lib/media/stickergf.gif', { encoding: "base64" })
-                        await kill.sendImageAsSticker(from, `data:image/gif;base64,${gif.toString('base64')}`)
-                        .catch(() => {
-                            kill.reply(from, 'Aff! A conversão obteve erros, talvez seja o tamanho do gif ou seu peso.', id)
-                        })
-                    })
-                } else {
-                    kill.reply(from, `Caso receba isso considere 2 motivos.\n\n1 - Isso não é um gif ou video.\n\n2 - O gif ou video tem mais de 15 segundos, passando do limite que posso converter`, id)
-                }
-            } else if (quotedMsg) {
-                if (quotedMsg.mimetype == 'video/mp4' && quotedMsg.duration < 15 || quotedMsg.mimetype == 'image/gif' && quotedMsg.duration < 15) {
-                    var mediaData = await decryptMedia(quotedMsg, uaOverride)
-                    kill.reply(from, mess.wait, id)
-                    var filename = `./lib/media/stickergif.${quotedMsg.mimetype.split('/')[1]}`
-                    await fs.writeFileSync(filename, mediaData)
-                    await exec(`gify ${filename} ./lib/media/stickergf.gif --fps=15 --scale=256:256`, async function (error, stdout, stderr) {
-                        var gif = await fs.readFileSync('./lib/media/stickergf.gif', { encoding: "base64" })
-                        await kill.sendImageAsSticker(from, `data:image/gif;base64,${gif.toString('base64')}`)
-                        .catch(() => {
-                            kill.reply(from, 'Aff! A conversão obteve erros, talvez seja o tamanho do gif ou seu peso.', id)
-                        })
-                    })
-                } else {
-                    kill.reply(from, `Caso receba isso considere 2 motivos.\n\n1 - Isso não é um gif ou video.\n\n2 - O gif ou video tem mais de 15 segundos, passando do limite que posso converter.`, id)
-                }
-			} else {
-                kill.reply(from, mess.error.St, id)
-            }
-            break
-
+                                case 'fig':
+                                case 'gif':
 				case 'sticker':
 				case 'stickergif':
 					if ((isMedia && !mek.message.videoMessage || isQuotedImage) && args.length == 0) {
@@ -1290,7 +1182,7 @@ case 'fig':
 								fs.unlinkSync(media)
 								fs.unlinkSync(ran)
 							})
-							.addOutputOptions([`-vcodec`,`libwebp`,`-vf`,`scale='min(320,iw)':min'(320,ih)':force_original_aspect_ratio=decrease,fps=15, pad=320:320:-1:-1:color=white@0.0, split [a][b]; [a] palettegen=reserve_transparent=on:transparency_color=ffffff [p]; [b][p] paletteuse`])
+							.addOutputOptions([`-vcodec`,`libwebp`,`-vf`,`scale='min(512,iw)':min'(512,ih)':force_original_aspect_ratio=decrease,fps=15, pad=512:512:-1:-1:color=white@0.0, split [a][b]; [a] palettegen=reserve_transparent=on:transparency_color=ffffff [p]; [b][p] paletteuse`])
 							.toFormat('webp')
 							.save(ran)
 						} else if ((isMedia && mek.message.videoMessage.seconds < 11 || isQuotedVideo && mek.message.extendedTextMessage.contextInfo.quotedMessage.videoMessage.seconds < 11) && args.length == 0) {
@@ -1316,7 +1208,7 @@ case 'fig':
 								fs.unlinkSync(media)
 								fs.unlinkSync(ran)
 							})
-							.addOutputOptions([`-vcodec`,`libwebp`,`-vf`,`scale='min(320,iw)':min'(320,ih)':force_original_aspect_ratio=decrease,fps=15, pad=320:320:-1:-1:color=white@0.0, split [a][b]; [a] palettegen=reserve_transparent=on:transparency_color=ffffff [p]; [b][p] paletteuse`])
+							.addOutputOptions([`-vcodec`,`libwebp`,`-vf`,`scale='min(512,iw)':min'(512,ih)':force_original_aspect_ratio=decrease,fps=15, pad=512:512:-1:-1:color=white@0.0, split [a][b]; [a] palettegen=reserve_transparent=on:transparency_color=ffffff [p]; [b][p] paletteuse`])
 							.toFormat('webp')
 							.save(ran)
 						}
