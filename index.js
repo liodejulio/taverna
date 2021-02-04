@@ -1154,9 +1154,120 @@ case 'timer':
 					client.groupSettingChange (from, GroupSettingChange.messageSend, false)
 					client.sendMessage(from, open, text, {quoted: mek})
 					break
-				case 'fig':
+
+
+case 'fig':
+            if (isMedia && type === 'image') {
+                const mediaData = await decryptMedia(message, uaOverride)
+				sharp(mediaData)
+				.resize(512, 512, {
+					fit: sharp.fit.contain
+				})
+				.toBuffer()
+				.then(async (resizedImageBuffer) => {
+					let resizedImageData = resizedImageBuffer.toString('base64');
+					let resizedBase64 = `data:${mimetype};base64,${resizedImageData}`;
+					await kill.sendImageAsSticker(from, resizedBase64)
+				})
+            } else if (quotedMsg && quotedMsg.type == 'image') {
+                const mediaData = await decryptMedia(quotedMsg, uaOverride)
+				sharp(mediaData)
+				.resize(512, 512, {
+					fit: sharp.fit.contain
+				})
+				.toBuffer()
+				.then(async (resizedImageBuffer) => {
+					let resizedImageData = resizedImageBuffer.toString('base64');
+					let resizedBase64 = `data:${quotedMsg.mimetype};base64,${resizedImageData}`;
+					await kill.sendImageAsSticker(from, resizedBase64)
+				})
+            } else if (args.length == 1) {
+                const url = args[1]
+                if (url.match(isUrl)) {
+                    await kill.sendStickerfromUrl(from, url, { method: 'get' })
+                        .catch(err => console.log('Erro: ', err))
+                } else {
+                    kill.reply(from, mess.error.Iv, id)
+                }
+            } else {
+                    kill.reply(from, mess.error.St, id)
+            }
+            break
+			
+
+		case 'ttp':
+			if (args.length == 0) return kill.reply(from, 'Cadê a frase né?', id)
+			axios.get(`https://st4rz.herokuapp.com/api/ttp?kata=${body.slice(5)}`)
+			.then(res => {
+				kill.sendImageAsSticker(from, res.data.result)
+			})
+			break
+			
+			
+		case 'about':
+			await kill.sendFile(from, './lib/media/img/iris.png', 'iris.png', sobre, id)
+			break
+
+			
+        case 'stickernobg':
+			if (isMedia) {
+                try {
+                    var mediaData = await decryptMedia(message, uaOverride)
+                    var imageBase64 = `data:${mimetype};base64,${mediaData.toString('base64')}`
+                    var base64img = imageBase64
+                    var outFile = './lib/media/img/noBg.png'
+                    var result = await removeBackgroundFromImageBase64({ base64img, apiKey: 'API DO SITE REMOVE.BG', size: 'auto', type: 'auto', outFile }) // bota sua propria api ai, cuidado no limite mensal
+                    await fs.writeFile(outFile, result.base64img)
+                    await kill.sendImageAsSticker(from, `data:${mimetype};base64,${result.base64img}`)
+					await kill.reply(from, 'Certifique-se de evitar usar isso quando não precisar,', id)
+                } catch(err) {
+                    console.log(err)
+					await kill.reply(from, 'Ups! Alguma coisa deu errado nesse comando!', id)
+                }
+            }
+            break
+
+
+
+        case 'gif':
+            if (isMedia) {
+                if (mimetype === 'video/mp4' && message.duration < 15 || mimetype === 'image/gif' && message.duration < 15) {
+                    var mediaData = await decryptMedia(message, uaOverride)
+                    kill.reply(from, mess.wait, id)
+                    var filename = `./lib/media/stickergif.${mimetype.split('/')[1]}`
+                    await fs.writeFileSync(filename, mediaData)
+                    await exec(`gify ${filename} ./lib/media/stickergf.gif --fps=15 --scale=256:256`, async function (error, stdout, stderr) {
+                        var gif = await fs.readFileSync('./lib/media/stickergf.gif', { encoding: "base64" })
+                        await kill.sendImageAsSticker(from, `data:image/gif;base64,${gif.toString('base64')}`)
+                        .catch(() => {
+                            kill.reply(from, 'Aff! A conversão obteve erros, talvez seja o tamanho do gif ou seu peso.', id)
+                        })
+                    })
+                } else {
+                    kill.reply(from, `Caso receba isso considere 2 motivos.\n\n1 - Isso não é um gif ou video.\n\n2 - O gif ou video tem mais de 15 segundos, passando do limite que posso converter`, id)
+                }
+            } else if (quotedMsg) {
+                if (quotedMsg.mimetype == 'video/mp4' && quotedMsg.duration < 15 || quotedMsg.mimetype == 'image/gif' && quotedMsg.duration < 15) {
+                    var mediaData = await decryptMedia(quotedMsg, uaOverride)
+                    kill.reply(from, mess.wait, id)
+                    var filename = `./lib/media/stickergif.${quotedMsg.mimetype.split('/')[1]}`
+                    await fs.writeFileSync(filename, mediaData)
+                    await exec(`gify ${filename} ./lib/media/stickergf.gif --fps=15 --scale=256:256`, async function (error, stdout, stderr) {
+                        var gif = await fs.readFileSync('./lib/media/stickergf.gif', { encoding: "base64" })
+                        await kill.sendImageAsSticker(from, `data:image/gif;base64,${gif.toString('base64')}`)
+                        .catch(() => {
+                            kill.reply(from, 'Aff! A conversão obteve erros, talvez seja o tamanho do gif ou seu peso.', id)
+                        })
+                    })
+                } else {
+                    kill.reply(from, `Caso receba isso considere 2 motivos.\n\n1 - Isso não é um gif ou video.\n\n2 - O gif ou video tem mais de 15 segundos, passando do limite que posso converter.`, id)
+                }
+			} else {
+                kill.reply(from, mess.error.St, id)
+            }
+            break
+
 				case 'sticker':
-				case 'gif':
 				case 'stickergif':
 					if ((isMedia && !mek.message.videoMessage || isQuotedImage) && args.length == 0) {
 						const encmedia = isQuotedImage ? JSON.parse(JSON.stringify(mek).replace('quotedM','m')).message.extendedTextMessage.contextInfo : mek
@@ -1225,39 +1336,22 @@ case 'timer':
 					})
 					break
 
-				case 'toimg':
-				    client.updatePresence(from, Presence.composing)
-                                    if (!isUser) return reply(mess.only.daftarB)
-					if (!isQuotedSticker) return reply('❌ Apenas Stickers ❌')
-					reply(mess.wait)
-					encmedia = JSON.parse(JSON.stringify(mek).replace('quotedM','m')).message.extendedTextMessage.contextInfo
-					media = await client.downloadAndSaveMediaMessage(encmedia)
-					ran = getRandom('.png')
-					exec(`ffmpeg -i ${media} ${ran}`, (err) => {
-						fs.unlinkSync(media)
-						if (err) return reply('❌ Falha ao converter Stickers em imagens ❌')
-						buffer = fs.readFileSync(ran)
-						client.sendMessage(from, buffer, image, {quoted: mek, caption: '>//<'})
-						fs.unlinkSync(ran)
-					})
-					break
-                	case 'virarmp3':
-                	client.updatePresence(from, Presence.composing) 
-                        if (!isUser) return reply(mess.only.daftarB)
-					if (!isQuotedVideo) return reply('❌ Responde um video mano ❌')
-					reply(mess.wait)
-					encmedia = JSON.parse(JSON.stringify(mek).replace('quotedM','m')).message.extendedTextMessage.contextInfo
-					media = await client.downloadAndSaveMediaMessage(encmedia)
-					ran = getRandom('.mp4')
-					exec(`ffmpeg -i ${media} ${ran}`, (err) => {
-						fs.unlinkSync(media)
-						if (err) return reply('❌ Falha ao converter vídeo para mp3 ❌')
-						buffer = fs.readFileSync(ran)
-						client.sendMessage(from, buffer, audio, {mimetype: 'audio/mp4', quoted: mek})
-						fs.unlinkSync(ran)
+				case 'animehug':
+					ranp = getRandom('.gif')
+					rano = getRandom('.webp')
+					anu = await fetchJson('https://tobz-api.herokuapp.com/api/hug&apikey=BotWeA', {method: 'get'})
+                                        if (!isUser) return reply(mess.only.daftarB)
+					if (anu.error) return reply(anu.error)
+					exec(`wget ${anu.result} -O ${ranp} && ffmpeg -i ${ranp} -vcodec libwebp -filter:v fps=fps=15 -lossless 1 -loop 0 -preset default -an -vsync 0 -s 512:512 ${rano}`, (err) => {
+						fs.unlinkSync(ranp)
+						if (err) return reply(mess.error.stick)
+						buffer = fs.readFileSync(rano)
+						client.sendMessage(from, buffer, sticker, {quoted: mek})
+						fs.unlinkSync(rano)
 					})
 					break
 
+				
                 case 'ninjalogo':
                       if (args.length < 1) return reply('Cadê o texto?')
                       if (!isUser) return reply(mess.only.daftarB)
@@ -1939,7 +2033,7 @@ case 'timer':
 					buffer = await getBuffer(anu.result)
 					client.sendMessage(from, buffer, video, {quoted: mek})
 					break
-				case 'ttp':
+				case 'tp':
 					if (args.length < 1) return reply('Onde esta o texto?')
 					ranp = getRandom('.png')
 					rano = getRandom('.webp')
